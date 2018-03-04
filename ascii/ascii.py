@@ -31,7 +31,7 @@ def getAverageL(image):
     # get average
     return np.average(im.reshape(w*h))
 
-def covertImageToAscii(fileName, cols, scale, moreLevels):
+def covertImageToAscii(fileName, cols, scale, moreLevels, invert, map):
     """
     Given Image and dims (rows, cols) returns an m*n list of Images 
     """
@@ -79,11 +79,25 @@ def covertImageToAscii(fileName, cols, scale, moreLevels):
             img = image.crop((x1, y1, x2, y2))
             # get average luminance
             avg = int(getAverageL(img))
+
+            # 如果用户设置了map，则map优先于moreLevels的设置
+            if map:
+                gscale1 = map
+                gscale2 = map
+
             # look up ascii char
             if moreLevels:
-                gsval = gscale1[int((avg*69)/255)]
+                index = len(gscale1) - 1
+                if invert:
+                    gsval = gscale1[int(((255-avg) * index) / 255)]
+                else:
+                    gsval = gscale1[int((avg*index)/255)]
             else:
-                gsval = gscale2[int((avg*9)/255)]
+                index = len(gscale2) - 1
+                if invert:
+                    gsval = gscale2[int(((255-avg) * index) / 255)]
+                else:
+                    gsval = gscale2[int((avg*index)/255)]
             # append ascii char to string
             aimg[j] += gsval
     
@@ -101,6 +115,8 @@ def main():
     parser.add_argument('--out', dest='outFile', required=False)
     parser.add_argument('--cols', dest='cols', required=False)
     parser.add_argument('--morelevels',dest='moreLevels',action='store_true')
+    parser.add_argument('--invert', dest='invert', action='store_true')
+    parser.add_argument('--map', dest='map', required=False)
 
     # parse args
     args = parser.parse_args()
@@ -121,8 +137,7 @@ def main():
 
     print('generating ASCII art...')
     # convert image to ascii txt
-    aimg = covertImageToAscii(imgFile, cols, scale, args.moreLevels)
-
+    aimg = covertImageToAscii(imgFile, cols, scale, args.moreLevels, args.invert, args.map)
     # open file
     f = open(outFile, 'w')
     # write to file
